@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import Clarifai from 'clarifai';
 import Particles from 'react-particles-js';
 import Navigation from './components/navigation/navigation';
 import SignIn from './components/signIn/signIn';
@@ -22,14 +21,7 @@ const particleOptions = {
   }
 }
 
-const app = new Clarifai.App({
-  apiKey: "1d6720864c734d8eb74eb5ad2b50f52b"
-});
-
-class App extends Component {
-  constructor(){
-    super();
-    this.state = {
+const initialState = {
       input: '',
       imageUrl: '',
       box: {},
@@ -43,6 +35,10 @@ class App extends Component {
         joined: '',
       }
     }
+class App extends Component {
+  constructor(){
+    super();
+    this.state = initialState;
   }
 
   loadUser = (data) => {
@@ -78,7 +74,13 @@ class App extends Component {
 
   onButtonSubmit = () => {
     this.setState({imageUrl: this.state.input});
-    app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
+    fetch('http://localhost:3000/imageurl', {
+          method: 'post', 
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            input: this.state.input})
+          }) 
+    .then(response => response.json())
     .then(response => {
       if (response){
         fetch('http://localhost:3000/image', {
@@ -91,7 +93,8 @@ class App extends Component {
         .then(response => response.json())
         .then(count => {
           this.setState(Object.assign(this.state.user, {entries: count}));
-        });
+        })
+        .catch(console.log);
       }
       this.displayFaceBox(this.calculateFaceLocation(response))
       })
@@ -100,7 +103,7 @@ class App extends Component {
 
   onRouteChange = (route) => {
     if (route === 'signout'){
-      this.setState({isSignedIn: false});
+      this.setState(initialState);
     } else if (route ==='home'){
       this.setState({isSignedIn: true});
     }
